@@ -1,0 +1,248 @@
+---
+title: "Homework5_kz2027"
+author: "Kun Zhou"
+date: "2022-08-18"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(magrittr)
+library(readxl)
+library(tinytex)
+library(stringr)
+library(broom)
+library(haven)
+library(Matching)
+
+library(estimatr)
+
+
+```
+
+## R Markdown
+
+##Question1:
+
+##![for a,b,c](CamScanner 08-18-2022 23.09)
+
+##![for c](CamScanner 08-18-2022 23.09))
+
+##Question2:
+
+
+##![for a,b,c](CamScanner 08-18-2022 23.11)
+
+##Question 3
+
+##Read the file
+```{r}
+OHIE <- read_dta('OHIE.dta')
+OHIE
+colnames(OHIE) 
+
+
+```
+
+##3.1
+95% interval:
+O1:-0.0146   0.0114 
+O2:-0.051  -0.0188 
+O3:-0.0229 -0.00766
+O4: 0.0173   0.0516
+Interpretation:
+only O1 includes 0 so we can reject the null; O2, O3, O4 doesn't include 0 so we fail to reject the null that there isn't correlation between the treatment and the outcome
+```{r}
+OHIE %>% group_by(tab2bp_hyper, tab2phqtot_high,tab4_catastrophic_exp_inp,tab5_needmet_med_inp) %>% summarize(N = n())
+OHIE 
+
+#O1: elevated blood pressure
+
+## Let's regress depression on the participation (this is *biased* because randomization is broken by non-compliance)
+# lm_robust(tab2bp_hyper ~ treatment, data=OHIE) 
+
+## What's the ITT?
+itt_reg1 <- lm_robust(tab2bp_hyper ~ treatment, data=OHIE)
+itt_reg1
+
+
+#O2: depression
+# lm_robust(tab2phqtot_high ~ treatment, data=OHIE) 
+
+## What's the ITT?
+itt_reg2 <- lm_robust(tab2phqtot_high ~ treatment, data=OHIE)
+itt_reg2
+
+#O3: catastrophic medical expenditure
+# lm_robust(tab4_catastrophic_exp_inp ~ treatment, data=OHIE) 
+
+## What's the ITT?
+itt_reg3 <- lm_robust(tab4_catastrophic_exp_inp ~ treatment, data=OHIE)
+itt_reg3
+
+#O4: whether respondents had their health care needs met
+# lm_robust(tab5_needmet_med_inp ~ treatment, data=OHIE) 
+
+## What's the ITT?
+itt_reg4 <- lm_robust(tab5_needmet_med_inp ~ treatment, data=OHIE)
+itt_reg4
+
+```
+
+##3.2.
+
+Why might these be biased estimates for the causal effect of Medicaid enrollment?
+
+because randomization is broken by non-compliance
+
+O1:-0.0321 -0.00401
+O2:0.0312   0.0674
+O3:-0.0187 -0.00278 
+O4: 0.0427   0.0799
+
+```{r}
+
+#O1:
+# lm_robust(tab2bp_hyper ~ ohp_all_ever_admin, data=OHIE) 
+
+## What's the ITT?
+itt_reg1 <- lm_robust(tab2bp_hyper ~ ohp_all_ever_admin, data=OHIE)
+itt_reg1
+
+
+#O2: depression
+# lm_robust(tab2phqtot_high ~ ohp_all_ever_admin, data=OHIE) 
+
+## What's the ITT?
+itt_reg2 <- lm_robust(tab2phqtot_high ~ ohp_all_ever_admin, data=OHIE)
+itt_reg2
+
+#O3: catastrophic medical expenditure
+# lm_robust(tab4_catastrophic_exp_inp ~ ohp_all_ever_admin, data=OHIE) 
+
+## What's the ITT?
+itt_reg3 <- lm_robust(tab4_catastrophic_exp_inp ~ ohp_all_ever_admin, data=OHIE)
+itt_reg3
+
+#O4: whether respondents had their health care needs met
+# lm_robust(tab5_needmet_med_inp ~ ohp_all_ever_admin, data=OHIE) 
+
+## What's the ITT?
+itt_reg4 <- lm_robust(tab5_needmet_med_inp ~ ohp_all_ever_admin, data=OHIE)
+itt_reg4
+
+
+```
+
+
+
+##3.3 and 3.4
+Second stage regression forthe CI lower and CI upper for the 4 outcomes are:
+O1:-0.106  -0.0132
+O2:0.0995    0.219
+O3:-0.0605 -0.00897
+O4:0.137    0.258
+compliance rates (the level of Medicaid enrollment) for subjects who were selected and subjects who were not selected.
+
+Is the instrument of assignment- to-treatment a strong instrument for actual Medicaid enrollment?
+No.
+
+First stage regression result: -0.106  -0.0132.
+
+Comparation between this answer and the before: this one with the second stage results confidence interval are stronger.
+
+```{r}
+# first stage regression
+
+first_stage <- lm_robust(treatment ~ ohp_all_ever_admin, data=OHIE)
+# fitted values
+OHIE$treatmentHat <- predict(first_stage, newdata=OHIE)
+
+
+##3.4 begins now
+
+#O1:elevated blood pressure
+# second stage results
+second_stage1 <- lm_robust(tab2bp_hyper ~ treatmentHat, data=OHIE)
+second_stage1
+
+two_sls1 <- iv_robust(tab2bp_hyper ~ treatment|ohp_all_ever_admin, data=OHIE)
+two_sls1
+
+#O2:depresssion
+second_stage2 <- lm_robust(tab2phqtot_high ~ treatmentHat, data=OHIE)
+second_stage2
+
+two_sls2 <- iv_robust(tab2phqtot_high ~ treatment|ohp_all_ever_admin, data=OHIE)
+two_sls2
+
+#O3:catastrophic medical expenditure
+second_stage3 <- lm_robust(tab4_catastrophic_exp_inp ~ treatmentHat, data=OHIE)
+second_stage3
+
+two_sls3 <- iv_robust(tab4_catastrophic_exp_inp ~ treatment|ohp_all_ever_admin, data=OHIE)
+two_sls3
+
+#O4:whether respondents had their health care needs met
+second_stage4 <- lm_robust(tab5_needmet_med_inp ~ treatmentHat, data=OHIE)
+second_stage4
+
+two_sls4 <- iv_robust(tab5_needmet_med_inp ~ treatment|ohp_all_ever_admin, data=OHIE)
+two_sls4
+
+```
+
+##3.5
+Answer:monotoncity assumption!!
+
+*one-sided non-compliance*
+
+
+##Question4:
+
+##4.1:
+there are 16272 units are in the ’control’ group. The bases variable does not change over time and the logged military aid variable DOES NOT change across units for a given year. The author is assuming that the military assistance is allocated evenly across in the municipality.
+
+```{r}
+
+bs = read_dta("bases_replication_final.dta")
+
+
+control_unit = nrow(bs[bs$bases6==0,])
+control_unit
+
+base_group = bs[,c("municipality","year","bases6")]
+
+base_group_group = base_group %>% group_by(municipality)  %>%
+                                      summarise(municipality = first(municipality),
+                                      base_variance = var(bases6),
+                                      .groups = 'drop')
+base_group_group
+
+aid = bs[,c("municipality","year","lrmilnar_col")]
+
+aid_group = aid %>% group_by(year)  %>%
+                          summarise(year = first(year),
+                          aid_variance = var(lrmilnar_col),
+                          .groups = 'drop')
+aid_group
+```
+##4.2
+
+Assumption 1: In the future, there will be a period of time that the control and the treatment group share a similar or a parallel trend. In other words, the authors assume that the data in past time periods can be representative of the the current situation and the current data can be representative of the future situation.(not sure…)
+
+Assumption 2: The authors assume that the unit treatment effect variance is similar in the different municipalities.
+
+##4.3
+```{r}
+
+```
+
+
+
+
+
