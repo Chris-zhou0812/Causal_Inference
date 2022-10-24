@@ -1,0 +1,273 @@
+---
+title: "homework4"
+author: "kz2027 Kun Zhou"
+date: "8/10/2022"
+output:
+  pdf_document: default
+  html_document: default
+---
+1.
+##Question1:
+```{r}
+vignettes <- read.csv("vignettes.csv")
+
+```
+
+1.
+Answer: It doesn't match with the fact, as china has higher self-assessment score, which contradict the fact that Chinese can't vote
+```{r}
+barplot(table(vignettes$self[vignettes$china==1])/sum(table(vignettes$self[vignettes$china==1])), xlab = "Score",ylab = "proportion of the respondents")
+barplot(table(vignettes$self[vignettes$china==0])/sum(table(vignettes$self[vignettes$china==0])),xlab = "Score",ylab = "proportion of the respondents")
+
+#mean for china:
+cm <- mean(vignettes$self[vignettes$china==1])
+cm
+#mean for Mexico
+mm <- mean(vignettes$self[vignettes$china==0])
+mm
+
+
+
+```
+
+2.
+Chinese respondents are much more composed of middle aged people and even elderly, as you can see from the graph ages below 35 proportion is not much compared to the peak of 40, and 50.
+Mexican respondents, on the other hand, are minaly composed of the youth, as you can see the green bars are higher extensively for ages under 35.
+So Chinese respondents have a higher median age than the Mexican respondants
+The QQplot shots that chinese respondents' ages are higher than that of the Mexicans'
+```{r}
+library(dplyr)
+chinaage <-vignettes$age[vignettes$china==1]
+mexicoage <- vignettes$age[vignettes$china==0]
+counts<-table(vignettes$china,vignettes$self)##coutns give you
+Mxage <-table(vignettes$age[vignettes$china == 0])
+Chage <-table(vignettes$age[vignettes$china == 1])
+total_age<-as.matrix(bind_rows(Mxage, Chage))#combine the ages of Mexican age and Chinese age together
+
+barplot(total_age,col=colors()[c(10,35)], main="Distribution of Age",
+   xlab="Scale of Say",legend = rownames(counts), beside=TRUE) ## in the graph 0 represent Mexican age and 1 represents Chinese age
+#I understand it as the median age for Chinese and Mexican respondents
+abline(v = median(vignettes$age[vignettes$china == 0]), col = "green", lty = "dashed")
+abline(v = median(vignettes$age[vignettes$china == 1]), col = "blue", lty = "dashed")
+
+qqplot(chinaage, mexicoage , xlab = "China Age", ylab = "Mexico age")
+abline(0,1, col = "red")
+```
+1.3
+
+when we look at the chinese participants scores to the vignettes, when we compare the self assessment vignettes to Alison, Jane, and Moses, the Chinese participants have less say compared to Mexican participants, which matches with the contradiction of Q1
+
+
+```{r}
+
+Mxself<-vignettes$self[vignettes$china == 0]
+Chself<-vignettes$self[vignettes$china == 1]
+Mexico<-counts[1,]/length(Mxself)
+China<-counts[2,]/length(Chself)
+total <- rbind(Mexico, China) 
+
+counts3<-table(vignettes$china,vignettes$self-vignettes$moses)
+Mx3<-vignettes$self[vignettes$china == 0]-vignettes$moses[vignettes$china == 0]
+Ch3<-vignettes$self[vignettes$china == 1]-vignettes$moses[vignettes$china == 1]
+Mexico3<-counts3[1,]/length(Mx3)
+China3<-counts3[2,]/length(Ch3)
+total3 <- rbind(Mexico3, China3) 
+barplot(total,col=colors()[c(10,35)], main="Distribution of Self Assessment",
+   xlab="Scale of Say",legend = rownames(counts), beside=TRUE) 
+Mean_Mexico3 = mean(vignettes$self[vignettes$china == 0]-vignettes$moses[vignettes$china == 0])
+Mean_China3 = mean(vignettes$self[vignettes$china == 1]-vignettes$moses[vignettes$china == 1])
+cat(Mean_Mexico3, Mean_China3)
+
+```
+1.4
+Interpretation:
+
+when we look at the chinese participants scores to the vignettes, when we compare the self assessment vignettes to Alison, Jane, and Moses, the Chinese participants have less say compared to Mexican participants, which matches with the contradiction of Q1
+
+The means of the result is 1.7, and Mexican is 2.2 different from the previous findings and the respondents interpret the survey differently.
+```{r}
+
+newdata <- vignettes[which(vignettes$alison >= vignettes$jane),]
+newdata2 <- newdata[which(newdata$jane >= newdata$moses),]
+newdata2 <- newdata2 %>% mutate (Group =
+                         case_when(self < moses ~ 1, 
+                               self <= jane | self == moses ~ 2,
+                               self <= alison | self == jane ~ 3,
+                               self >= alison ~ 4))
+
+
+counts4<-table(newdata2$china,newdata2$Group)
+Mx4<-newdata2$Group[newdata2$china == 0]
+Ch4<-newdata2$Group[newdata2$china == 1]
+Mexico4<-counts4[1,]/length(Mx4)
+China4<-counts4[2,]/length(Ch4)
+total4 <- rbind(Mexico4, China4) 
+barplot(total4,col=colors()[c(12,33)], main="Distribution of Group[Mexico vs. China]",
+   xlab="Group",legend = rownames(counts4), beside=TRUE) 
+Mean_Mexico4 = mean(newdata2$Group[newdata2$china == 0])
+Mean_China4 = mean(newdata2$Group[newdata2$china == 1])
+cat(Mean_Mexico4, Mean_China4)
+
+```
+
+
+
+1.5
+One way to investigate it by
+Doing t-test, since the p-value is higher than 0,05, we can't say that the problem identified above more or less severe among older respondents when compared to younger ones.
+
+Also, By verifying this through the mean of two age groups, we can also see that it doesn't affect political efficacy that much.
+
+
+```{r}
+age_40OLD <- newdata2[which(newdata2$age>40|newdata2$age==40),]
+age_40YOUNG <- newdata2[which(newdata2$age<40),]
+
+counts5<-table(age_40OLD$china,age_40OLD$Group)
+Mx5<-age_40OLD$Group[age_40OLD$china == 0]
+Ch5<-age_40OLD$Group[age_40OLD$china == 1]
+Mexico5<-counts5[1,]/length(Mx5)
+China5<-counts5[2,]/length(Ch5)
+total5 <- rbind(Mexico5, China5) 
+barplot(total5,col=colors()[c(12,33)], main="Distribution of Group for 40 and older[Mexico vs. China]",
+   xlab="Group",legend = rownames(counts4), beside=TRUE) 
+
+counts6<-table(age_40YOUNG$china,age_40YOUNG$Group)
+Mx6<-age_40YOUNG$Group[age_40YOUNG$china == 0]
+Ch6<-age_40YOUNG$Group[age_40YOUNG$china == 1]
+Mexico6<-counts6[1,]/length(Mx6)
+China6<-counts6[2,]/length(Ch6)
+total6 <- rbind(Mexico6, China6) 
+barplot(total6,col=colors()[c(12,33)], main="Distribution of Group for Younger Generations(Under40)[Mexico vs. China]",
+   xlab="Group",legend = rownames(counts4), beside=TRUE) 
+
+
+
+```
+
+
+2.1
+#for turnout, since p-value is >0.05 for our alpha=0.05, we fail to reject that Progresa changed the turnout rate. But for the support rates, p-value =0.03 < 0.05 for our alpha level,
+#so we reject H_0 that Progresa does not change pri2000s.
+
+ATE (point estimate) for treatment on pri2000s is 3.62, while the ATE for treatment on t2000 would is 4.27.
+
+```{r}
+pro <- read.csv('progresa.csv')
+
+summary(pro)
+
+treated_s = pro$pri2000s[pro$treatment==1]
+control_s = pro$pri2000s[pro$treatment==0]
+treated_t = pro$t2000[pro$treatment==1]
+control_t = pro$t2000[pro$treatment==0]
+
+treated_s
+
+ate_s <- mean(treated_s)-mean(control_s)
+ate_t <- mean(treated_t)-mean(control_t)
+ate_s
+ate_t
+
+lm(pro$pri2000s ~ pro$treatment,data=pro)
+
+plot(pro$treatment,pro$pri2000s,main='regression for pri2000s and treatment')
+
+abline(lm(pro$pri2000s~pro$treatment,data=pro),col='red')
+
+par('mar')
+par(mar=c(1,1,1,1))
+
+plot(pro$treatment,pro$t2000,main='regression for t2000 and treatment')
+
+abline(lm(pro$t2000~pro$treatment,data=pro),col='blue')
+
+getStats <- function(t,c){
+  ate <- mean(t)-mean(c)
+  se <- sqrt(var(t)/length(t)+var(c)/length(c))
+  ci_95 <- c(ate-qnorm(.975)*se,ate+qnorm(.975)*se)
+  pval <- 2*pnorm(-abs(ate/se))
+  
+  output <- data.frame(ATE = ate, StandardError = se, CI95_lower = ci_95[1], CI95_upper = ci_95[2], P_value = pval)
+  return(as_tibble(output))
+}
+
+getStats(treated_s,control_s)
+getStats(treated_t,control_t)
+
+
+```
+
+2.2
+
+results are different from previous findings,indicating a positive ATE
+
+```{r}
+reg_pro_2s <- lm(pri2000s ~ treatment + pri1994 + prd1994 + pan1994 + avgpoverty + pobtot1994 + votos1994 ,data=pro)
+reg_pro_2t <- lm(t2000 ~ treatment + pri1994 + prd1994 + pan1994 + avgpoverty + pobtot1994 + votos1994 ,data=pro)
+coef(reg_pro_2s)['treatment']
+coef(reg_pro_2t)['treatment']
+
+```
+
+
+2.3
+Conclusion:
+
+due to the fact higher adjusted r squared value, both of the model estimator here are better fits.
+
+```{r}
+reg_pro_3 <- lm(pri2000s ~ treatment + pri1994s + prd1994s + pan1994s + avgpoverty + t1994 + log(pobtot1994) + votos1994, data=pro)
+coef(reg_pro_3)['treatment']
+```
+
+
+
+2.4
+From the above boxplots, the median are similar for every plots, so do IQR.
+But treated groups have more outliers (larger range) than control group, indicating there is treatment effect.
+
+```{r}
+boxplot1 <- boxplot(pro$pobtot1994[pro$treatment==1],pro$pobtot1994[pro$treatment==0])
+boxplot2 <- boxplot(pro$avgpoverty[pro$treatment==1],pro$avgpoverty[pro$treatment==0])
+boxplot3 <- boxplot(pro$t1994[pro$treatment==1],pro$t1994[pro$treatment==0])
+boxplot4 <- boxplot(pro$pri1994s[pro$treatment==1], pro$pri1994s[pro$treatment==0])
+
+```
+2.5
+
+in terms of t2000r, ATE is negative, showiting that the treatment is not effective.
+in terms of pri2000v, the ATE is positive, but much less than the previous findings, showing that the treatment is less effective.
+
+```{r}
+
+reg_pro_5a <- lm(t2000r ~ treatment + avgpoverty + log(pobtot1994) + t1994r + pri1994v + prd1994v + pan1994v, data=pro)
+reg_pro_5b <- lm(pri2000v ~ treatment + avgpoverty + log(pobtot1994) + t1994r + pri1994v + prd1994v + pan1994v, data=pro)
+coef(reg_pro_5a)['treatment']
+coef(reg_pro_5b)['treatment']
+
+```
+
+
+2.6
+Conclusion:
+
+he result differs on poverty level.
+the treated and control group achieve the same value, while at around 3.6, the difference between the two group is the largest and the control group reaches the higher level.
+This means poverty level is associated with the outcome.
+```{r}
+reg_pro_6a <- lm(pri2000v ~ treatment + log(pobtot1994) + avgpoverty + I(avgpoverty^2) + treatment:avgpoverty + I(avgpoverty^2):treatment, data=pro)
+coef(reg_pro_6a)['treatment']
+reg_pro_6b <- lm(t2000r ~ treatment + log(pobtot1994) + avgpoverty + I(avgpoverty^2) + treatment:avgpoverty + I(avgpoverty^2):treatment, data=pro)
+coef(reg_pro_6b)['treatment']
+```
+
+
+##Question 3:
+
+##![for a,b,c](Q3.pdf)
+
+
+##Question 4:
+
+##![for a,b,c](Q4.pdf)
